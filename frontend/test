@@ -1,0 +1,249 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import App from '../../src/app/App';
+import type { Task } from '../../src/domain/models';
+
+function makeTask(overrides: Partial<Task> = {}): Task {
+  return {
+    id: 1,
+    title: 'Оптимизация склада',
+    industry: 'Логистика',
+    context: '',
+    need: 'Сократить время сборки заказов',
+    users: '',
+    data_and_materials: '',
+    constraints: '',
+    expected_result: '',
+    success_criteria: '',
+    contact: '',
+    collaboration_format: '',
+    score: 70,
+    readiness_level: 'ready',
+    is_confirmed: true,
+    is_published: true,
+    score_breakdown: [],
+    missing_information: [],
+    ...overrides,
+  };
+}
+
+function jsonResponse(
+  body: unknown,
+  ok = true,
+  status = 200,
+): Response {
+  return {
+    ok,
+    status,
+    json: () => Promise.resolve(body),
+  } as unknown as Response;
+}
+
+describe('App', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  it('shows the loading indicator while tasks are loading', () => {
+    fetchMock.mockReturnValueOnce(new Promise(() => undefined));
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByText(/Загружаем данные из Django API/i),
+    ).toBeInTheDocument();
+  });
+
+  it('loads and displays tasks on the home page', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        results: [makeTask()],
+      }),
+    );
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Оптимизация склада'),
+      ).toBeInTheDocument();
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/tasks/',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'Content-Type': 'application/json',
+        }),
+      }),
+    );
+  });
+
+  it('renders multiple tasks returned by the API', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        results: [
+          makeTask({
+            id: 1,
+            title: 'Оптимизация склада',
+          }),
+          makeTask({
+            id: 2,
+            title: 'Автоматизация отчётности',
+          }),
+        ],
+      }),
+    );
+
+    render(
+      <MemoryRouter initialEntries={['/tasks']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Оптимизация склада'),
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByText('Автоматизация отчётности'),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('renders the empty-catalog message when no tasks are returned', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        results: [],
+      }),
+    );
+
+    render(
+      <MemoryRouter initialEntries={['/tasks']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Пока нет опубликованных задач/i),
+      ).toBeInTheDocument();
+    });
+
+    expect(
+      screen.queryByText(/Загружаем данные из Django API/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows an error message when the API request fails', async () => {
+    fetchMock.mockRejectedValueOnce(
+      new TypeError('Network Error'),
+    );
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Не удалось подключиться к Django API/i),
+      ).toBeInTheDocument();
+    });
+
+    expect(
+      screen.getByRole('button', {
+        name: /Повторить/i,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('retries the request after clicking the retry button', async () => {
+    fetchMock
+      .mockRejectedValueOnce(new TypeError('Network Error'))
+      .mockResolvedValueOnce(
+        jsonResponse({
+          results: [makeTask()],
+        }),
+      );
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    const retryButton = await screen.findByRole('button', {
+      name: /Повторить/i,
+    });
+
+    retryButton.click();
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Оптимизация склада'),
+      ).toBeInTheDocument();
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      '/api/tasks/',
+      expect.any(Object),
+    );
+  });
+
+  it('renders the not-found page for an unknown route', () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({
+        results: [],
+      }),
+    );
+
+    render(
+      <MemoryRouter initialEntries={['/does-not-exist']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByText(/Страница не найдена/i),
+    ).toBeInTheDocument();
+  });
+
+  it('does not display task data on an unknown route', () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({
+        results: [makeTask()],
+      }),
+    );
+
+    render(
+      <MemoryRouter initialEntries={['/unknown-page']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByText(/Страница не найдена/i),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByText('Оптимизация склада'),
+    ).not.toBeInTheDocument();
+  });
+});
