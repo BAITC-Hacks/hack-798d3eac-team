@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Route, Routes } from 'react-router-dom';
 import { Activity, BriefcaseBusiness, ClipboardList, Plus, RefreshCw, Users } from 'lucide-react';
-import { ApiError } from '../api/http';
 import { proposalApi, taskApi, teamApi } from '../api/services';
-import { emptyTask, ProposalModel, TaskModel, type Proposal, type Task, type TaskAnalysis, type TaskInput, type Team } from '../domain/models';
+import { emptyTask, ProposalModel, TaskModel, type Task, type TaskAnalysis, type TaskInput } from '../domain/models';
 
 function useLoad<T>(loader: () => Promise<T>, deps: unknown[] = []) {
   const [value, setValue] = useState<T | null>(null); const [error, setError] = useState(''); const [busy, setBusy] = useState(true);
@@ -53,7 +52,12 @@ const fields: { name: keyof TaskInput; label: string; multiline?: boolean; requi
 ];
 
 function TaskEditor({ task, onSaved }: { task?: Task; onSaved: (task: Task) => void }) {
-  const [form, setForm] = useState<TaskInput>(task ? Object.fromEntries(Object.keys(emptyTask).map(k => [k, task[k as keyof TaskInput] ?? ''])) as TaskInput : emptyTask);
+  const [form, setForm] = useState<TaskInput>(task ? {
+    title: task.title, industry: task.industry, context: task.context, need: task.need,
+    users: task.users, data_and_materials: task.data_and_materials, constraints: task.constraints,
+    expected_result: task.expected_result, success_criteria: task.success_criteria,
+    contact: task.contact, collaboration_format: task.collaboration_format,
+  } : emptyTask);
   const [analysis, setAnalysis] = useState<TaskAnalysis | null>(task ? { score: task.score, readiness_level: task.readiness_level, score_breakdown: task.score_breakdown, missing_information: task.missing_information, questions: [] } : null);
   const [id, setId] = useState<number | null>(task?.id ?? null); const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const [message, setMessage] = useState('');
   const change = (key: keyof TaskInput, value: string) => setForm(prev => ({ ...prev, [key]: value }));

@@ -4,9 +4,11 @@ React + TypeScript frontend for the Django project in `C:\Users\user\Desktop\bac
 
 ## Run locally
 
-1. Start Django from the backend directory: `python manage.py runserver` (default `http://127.0.0.1:8000`).
-2. In this directory run `npm install`, then `npm run dev`.
-3. Open the Vite URL printed in the terminal. Vite proxies `/api` and `/admin` to Django. Override the target with `DJANGO_URL`, or set `VITE_API_BASE_URL` when the API is hosted elsewhere.
+1. Install the backend Python dependencies if needed: `python -m pip install Django python-dotenv`.
+2. Set `SECRET_KEY` in the environment (required by the supplied settings) and run `python manage.py migrate` from the backend directory. The initial `tasks_app` migration is included in the backend.
+3. Start Django from the backend directory: `python manage.py runserver 127.0.0.1:8000`.
+4. In this directory run `npm install`, then `npm run dev -- --host 127.0.0.1`.
+5. Open the Vite URL printed in the terminal. Vite proxies `/api` and `/admin` to Django. Override the target with `DJANGO_URL`, or set `VITE_API_BASE_URL` when the API is hosted elsewhere.
 
 The frontend consumes the existing Django routes: `GET/POST /api/tasks/`, `GET/PATCH /api/tasks/:id/`, `GET /api/tasks/:id/analysis/`, `POST /api/tasks/:id/publish/`, `GET /api/teams/`, and `GET/POST /api/proposals/` plus `POST /api/proposals/:id/decision/`.
 
