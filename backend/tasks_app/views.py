@@ -6,7 +6,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from .models import Proposal, Task, Team
-from .services.ai_helper import clarification_questions
+from .services.ai_helper import analyze_task
 from .services.scoring import calculate_score, readiness_level
 
 TASK_FIELDS = [
@@ -17,9 +17,10 @@ TASK_FIELDS = [
 
 def body(request):
     try:
-        return json.loads(request.body or "{}")
+        data = json.loads(request.body or "{}")
     except json.JSONDecodeError:
         return None
+    return data if isinstance(data, dict) else None
 
 
 def task_payload(task, include_proposals=False):
@@ -68,11 +69,20 @@ def tasks(request):
         industry = request.GET.get("industry")
         if industry:
             queryset = queryset.filter(industry__iexact=industry)
+        level = request.GET.get("readiness_level")
+        level_ranges = {"draft": (0, 39), "working": (40, 69), "ready": (70, 89), "priority": (90, 100)}
+        if level:
+            if level not in level_ranges:
+                return JsonResponse({"error": "readiness_level must be draft, working, ready, or priority."}, status=400)
+            low, high = level_ranges[level]
+            queryset = queryset.filter(readiness_score__gte=low, readiness_score__lte=high)
         return JsonResponse({"results": [task_payload(item) for item in queryset]})
 
     data = body(request)
     if data is None:
         return JsonResponse({"error": "Invalid JSON."}, status=400)
+    if any(field in data and not isinstance(data[field], str) for field in TASK_FIELDS):
+        return JsonResponse({"error": "Task fields must be strings."}, status=400)
     task = Task.objects.create(**{field: data.get(field, "") for field in TASK_FIELDS})
     return JsonResponse(task_payload(task), status=201)
 
@@ -87,9 +97,14 @@ def task_detail(request, task_id):
     data = body(request)
     if data is None:
         return JsonResponse({"error": "Invalid JSON."}, status=400)
+    if any(field in data and not isinstance(data[field], str) for field in TASK_FIELDS):
+        return JsonResponse({"error": "Task fields must be strings."}, status=400)
+    fields_changed = any(field in data and getattr(task, field) != data[field] for field in TASK_FIELDS)
     for field in TASK_FIELDS:
         if field in data:
             setattr(task, field, data[field])
+    if fields_changed:
+        task.is_confirmed = False
     if "is_confirmed" in data:
         task.is_confirmed = bool(data["is_confirmed"])
     score, _, _ = calculate_score(task)
@@ -102,12 +117,14 @@ def task_detail(request, task_id):
 def task_analysis(request, task_id):
     task = get_object_or_404(Task, pk=task_id)
     score, breakdown, missing = calculate_score(task)
+    questions, ai_provider = analyze_task(task)
     return JsonResponse({
         "score": score,
         "readiness_level": readiness_level(score),
         "score_breakdown": breakdown,
         "missing_information": missing,
-        "questions": clarification_questions(task),
+        "questions": questions,
+        "ai_provider": ai_provider,
     })
 
 

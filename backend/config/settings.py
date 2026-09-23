@@ -12,6 +12,8 @@ if not SECRET_KEY:
     raise ImproperlyConfigured("SECRET_KEY must be set in the environment or .env file.")
 
 DEBUG = os.getenv("DEBUG", "False").lower() in {"1", "true", "yes", "on"}
+API_KEY = os.getenv("API_KEY", "").strip()
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip()
 ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
