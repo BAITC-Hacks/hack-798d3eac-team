@@ -7,7 +7,7 @@ from django.views.decorators.http import require_http_methods
 
 from .models import Proposal, Task, Team
 from .services.ai_helper import analyze_task
-from .services.scoring import calculate_score, readiness_level
+from .services.scoring import calculate_preview_score, calculate_score, readiness_level
 from .task_fields import TASK_FIELDS
 
 
@@ -20,14 +20,16 @@ def body(request):
 
 
 def task_payload(task, include_proposals=False):
-    score, breakdown, missing = calculate_score(task)
-    if task.readiness_score != score:
+    score_fn = calculate_score if task.is_confirmed else calculate_preview_score
+    score, breakdown, missing = score_fn(task)
+    if task.is_confirmed and task.readiness_score != score:
         Task.objects.filter(pk=task.pk).update(readiness_score=score)
         task.readiness_score = score
     data = {field: getattr(task, field) for field in TASK_FIELDS}
     data.update({
         "id": task.id,
         "score": score,
+        "score_is_provisional": not task.is_confirmed,
         "readiness_level": readiness_level(score),
         "is_confirmed": task.is_confirmed,
         "is_published": task.is_published,
@@ -112,10 +114,12 @@ def task_detail(request, task_id):
 @require_http_methods(["GET"])
 def task_analysis(request, task_id):
     task = get_object_or_404(Task, pk=task_id)
-    score, breakdown, missing = calculate_score(task)
+    score_fn = calculate_score if task.is_confirmed else calculate_preview_score
+    score, breakdown, missing = score_fn(task)
     questions, ai_provider = analyze_task(task)
     return JsonResponse({
         "score": score,
+        "score_is_provisional": not task.is_confirmed,
         "readiness_level": readiness_level(score),
         "score_breakdown": breakdown,
         "missing_information": missing,
