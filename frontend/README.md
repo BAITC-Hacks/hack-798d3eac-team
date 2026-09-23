@@ -1,4 +1,4 @@
-# AI Sana frontend
+# Iske frontend
 
 React + TypeScript frontend for the Django project in `C:\Users\user\Desktop\backend`.
 
