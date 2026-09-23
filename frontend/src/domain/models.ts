@@ -34,6 +34,7 @@ export interface Task extends TaskFields {
   proposals?: Proposal[];
 }
 export interface Team { id: number; name: string; interests: string; skills: string; technologies: string }
+export interface TeamInput { name: string; interests: string; skills: string; technologies: string }
 export interface Proposal {
   id: number;
   task_id: number;
@@ -52,7 +53,7 @@ export interface ProposalInput {
   duration: string;
   prototype_url?: string;
 }
-export interface TaskInput extends TaskFields {}
+export type TaskInput = TaskFields;
 export const emptyTask: TaskInput = {
   title: '', industry: '', context: '', need: '', users: '', data_and_materials: '',
   constraints: '', expected_result: '', success_criteria: '', contact: '', collaboration_format: '',

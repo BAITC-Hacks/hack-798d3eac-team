@@ -1,5 +1,5 @@
 import { HttpClient } from './http';
-import type { Proposal, ProposalInput, ProposalStatus, Task, TaskAnalysis, TaskFields, Team } from '../domain/models';
+import type { Proposal, ProposalInput, ProposalStatus, Task, TaskAnalysis, TaskFields, Team, TeamInput } from '../domain/models';
 
 export class TaskApi {
   constructor(private readonly http: HttpClient) {}
@@ -20,6 +20,9 @@ export class TaskApi {
 export class TeamApi {
   constructor(private readonly http: HttpClient) {}
   async list(): Promise<Team[]> { return (await this.http.request<{ results: Team[] }>('/teams/')).results; }
+  create(input: TeamInput): Promise<Pick<Team, 'id' | 'name'>> {
+    return this.http.request('/teams/', { method: 'POST', body: JSON.stringify(input) });
+  }
 }
 export class ProposalApi {
   constructor(private readonly http: HttpClient) {}
