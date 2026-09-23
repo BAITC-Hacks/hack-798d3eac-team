@@ -2,8 +2,9 @@
 Hackathon team repository for Мы случайно регнулись
 # Iske — платформа практических проектов для бизнеса и студентов
 # 🚀 Iske
-
-
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)](https://www.python.org/)
+[![Django](https://img.shields.io/badge/Django-5.1-092E20?logo=django)](https://www.djangoproject.com/)
+[![React](https://img.shields.io/badge/React-18.x-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 
 ### Платформа, которая соединяет бизнес-задачи и студенческие команды
 
