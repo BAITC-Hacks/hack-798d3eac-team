@@ -2,22 +2,25 @@ import logging
 
 from django.conf import settings
 
-from .scoring import SCORING_RULES
+from ..task_fields import TASK_FIELDS
 
 logger = logging.getLogger(__name__)
 
 
-def _fallback_questions(task):
+def _load_prompt_config():
+    import json
+
+    return json.loads((settings.PROMPTS_DIR / "task_clarification.json").read_text(encoding="utf-8"))
+
+
+def _fallback_questions(task, prompt):
     questions = []
-    for fields, _, recommendation in SCORING_RULES.values():
-        if not all(getattr(task, field, "").strip() for field in fields):
-            questions.append(recommendation)
-    fallback = [
-        "Who will use the result?",
-        "What result would make this work successful?",
-        "What constraints should the team know about?",
-    ]
-    for question in fallback:
+    for field in TASK_FIELDS:
+        if not getattr(task, field, "").strip():
+            question = prompt["fallback_questions_by_field"].get(field)
+            if question:
+                questions.append(question)
+    for question in prompt["fallback_questions_generic"]:
         if len(questions) >= 3:
             break
         if question not in questions:
@@ -27,26 +30,20 @@ def _fallback_questions(task):
 
 def analyze_task(task):
     """Ask OpenAI for targeted clarification questions, with an offline fallback."""
+    prompt = _load_prompt_config()
     if not settings.API_KEY:
-        return _fallback_questions(task), "fallback"
+        return _fallback_questions(task, prompt), "fallback"
 
     try:
         import json
         from openai import OpenAI
 
-        prompt = json.loads((settings.PROMPTS_DIR / "task_clarification.json").read_text(encoding="utf-8"))
         response = OpenAI(api_key=settings.API_KEY).responses.create(
             model=settings.OPENAI_MODEL,
             instructions=prompt["instructions"],
             input=json.dumps(
                 {
-                    "context": task.context,
-                    "need": task.need,
-                    "users": task.users,
-                    "data_and_materials": task.data_and_materials,
-                    "constraints": task.constraints,
-                    "expected_result": task.expected_result,
-                    "success_criteria": task.success_criteria,
+                    field: getattr(task, field, "") for field in TASK_FIELDS
                 },
                 ensure_ascii=False,
             ),
@@ -65,7 +62,7 @@ def analyze_task(task):
         # Keep analysis available when the key, network, API, or response is unavailable.
         logger.warning("OpenAI clarification failed; using local fallback.")
 
-    return _fallback_questions(task), "fallback"
+    return _fallback_questions(task, prompt), "fallback"
 
 
 def clarification_questions(task):

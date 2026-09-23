@@ -8,11 +8,7 @@ from django.views.decorators.http import require_http_methods
 from .models import Proposal, Task, Team
 from .services.ai_helper import analyze_task
 from .services.scoring import calculate_score, readiness_level
-
-TASK_FIELDS = [
-    "title", "industry", "context", "need", "users", "data_and_materials",
-    "constraints", "expected_result", "success_criteria", "contact", "collaboration_format",
-]
+from .task_fields import TASK_FIELDS
 
 
 def body(request):
