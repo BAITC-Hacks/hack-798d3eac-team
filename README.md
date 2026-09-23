@@ -264,33 +264,3 @@ py manage.py check
 
 Эта команда проверяет настройки и конфигурацию Django. Она не заменяет проверку фактических операций с данными.
 
-### 5. Создать тестовые данные вручную
-
-Для локальной проверки можно открыть Django shell:
-
-```powershell
-py manage.py shell
-```
-
-В shell выполнить:
-
-```python
-from tasks_app.models import Task, Team, Proposal
-
-task = Task.objects.create(
-    title="Упростить запись клиентов",
-    industry="Услуги",
-    context="Записи сейчас принимаются вручную",
-    need="Сделать процесс записи понятнее",
-    data_and_materials="Есть примеры обращений клиентов",
-    expected_result="Прототип формы онлайн-записи",
-    success_criteria="Клиент может отправить заявку без помощи сотрудника",
-    constraints="Первый прототип нужен за две недели",
-    users="Клиенты компании",
-    contact="Заказчик MVP",
-    collaboration_format="Еженедельная онлайн-консультация",
-)
-
-team = Team.objects.create(
-    name="Команда Iske Demo",
-    interests="EdTech, веб-приложения",
