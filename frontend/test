@@ -58,7 +58,7 @@ describe('App', () => {
     );
 
     expect(
-      screen.getByText(/Загружаем данные из Django API/i),
+      screen.getByText(/Загружаем данные/i),
     ).toBeInTheDocument();
   });
 
@@ -144,7 +144,7 @@ describe('App', () => {
     });
 
     expect(
-      screen.queryByText(/Загружаем данные из Django API/i),
+      screen.queryByText(/Загружаем данные/i),
     ).not.toBeInTheDocument();
   });
 
@@ -161,7 +161,7 @@ describe('App', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Не удалось подключиться к Django API/i),
+        screen.getByText(/Не удалось подключиться к серверу/i),
       ).toBeInTheDocument();
     });
 

@@ -12,7 +12,7 @@ export class HttpClient {
         headers: { 'Content-Type': 'application/json', ...init.headers },
       });
     } catch {
-      throw new ApiError('Не удалось подключиться к Django API. Проверьте, что сервер запущен.', 0);
+      throw new ApiError('Не удалось подключиться к серверу. Проверьте, что приложение запущено.', 0);
     }
     const payload = await response.json().catch(() => ({} as { error?: string }));
     if (!response.ok) throw new ApiError(payload.error ?? `Ошибка сервера (${response.status})`, response.status);
