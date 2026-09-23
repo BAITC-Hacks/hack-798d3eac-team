@@ -6,13 +6,7 @@
   [![TypeScript](https://img.shields.io/badge/TypeScript-7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
   [![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 
-## 🧑‍💼 Принципы интерфейса: меньше кликов, больше ясности
 
-Iske должен ощущаться как единое рабочее пространство, а не как цепочка разрозненных форм. Пользователь видит важное сразу, выполняет частые действия на текущем экране и всегда понимает следующий шаг.
-
-### Единая навигация
-
-Основные разделы доступны из постоянного меню:
 
 | Раздел | Для бизнеса | Для студента |
 |---|---|---|
